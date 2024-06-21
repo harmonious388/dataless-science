@@ -1,1 +1,143 @@
 # IBM/Coursera Databases and SQL for Data Science with Python Final Project: Advanced SQL Techniques (Honors Module)
+## Exercise 1: Using Joins
+## You have been asked to produce some reports about the communities and crimes in the Chicago area. You will need to use SQL queries to access the data stored across multiple tables. 
+
+--Exercise 1, Question 1: Write and execute a SQL query to list the school names, community names and average attendance for communities with a hardship index of 98.
+
+SELECT CPS.NAME_OF_SCHOOL, CPS.COMMUNITY_AREA_NAME, CPS.AVERAGE_STUDENT_ATTENDANCE, CSED.HARDSHIP_INDEX
+FROM chicago_public_schools AS CPS LEFT OUTER JOIN chicago_socioeconomic_data AS CSED
+	ON CPS.COMMUNITY_AREA_NAME = CSED.COMMUNITY_AREA_NAME
+  WHERE CSED.HARDSHIP_INDEX = 98
+
+--Exercise 1, Question 2: Write and execute a SQL query to list all crimes that took place at a school. Include case number, crime type and community name.
+
+SELECT CCD.CASE_NUMBER, CCD.PRIMARY_TYPE, CCD.LOCATION_DESCRIPTION, CSED.COMMUNITY_AREA_NAME
+FROM chicago_crime AS CCD LEFT JOIN chicago_socioeconomic_data as CSED
+	ON CCD.COMMUNITY_AREA_NUMBER = CSED.COMMUNITY_AREA_NUMBER
+  WHERE CCD.LOCATION_DESCRIPTION LIKE 'SCHOOL%';
+
+## Exercise 2: Creating a View
+
+--Write and execute a SQL statement to create a view showing the columns listed in the following table, with new column names as shown in the second column.
+" | Column name in CHICAGO_PUBLIC_SCHOOLS	| Column name in view |n",
+  " | ------------------ |\n",
+  " | NAME_OF_SCHOOL	| School_Name |\n",
+  " | Safety_Icon |	Safety_Rating |n",
+  " | Family_Involvement_Icon |	Family_Rating |n",
+  " | Environment_Icon |	Environment_Rating |n",
+  " | Instruction_Icon |	Instruction_Rating |n",
+  " | Leaders_Icon |	Leaders_Rating |n",
+  " | Teachers_Icon	| Teachers_Rating |"
+
+CREATE VIEW CHICAGO_PUBLIC_SCHOOL_RATINGS (School_Name, Safety_Rating, Family_Rating, Environmental_Rating, Instruction_Rating, Leaders_Rating, Teachers_Rating)
+	AS SELECT NAME_OF_SCHOOL, Safety_Icon, Family_Involvement_Icon, Environment_Icon, Instruction_Icon, Leaders_Icon, Teachers_Icon
+  FROM chicago_public_schools;
+
+--Write and execute a SQL statement that returns all of the columns from the view.
+
+SELECT* FROM CHICAGO_PUBLIC_SCHOOL_RATINGS;
+
+--Write and execute a SQL statement that returns just the school name and leaders rating from the view.
+
+SELECT School_Name, Leaders_Rating
+FROM CHICAGO_PUBLIC_SCHOOL_RATINGS;
+
+--Take a screenshot showing the last SQL query and its results.
+
+## Exercise 3: Creating a Stored Procedure
+## The icon fields are calculated based on the value in the corresponding score field. You need to make sure that when a score field is updated, the icon field is updated too. To do this, you will write a stored procedure that receives the school id and a leaders score as input parameters, calculates the icon setting and updates the fields appropriately.
+
+--Question 1: Write the structure of a query to create or replace a stored procedure called UPDATE_LEADERS_SCORE that takes a in_School_ID parameter as an integer and a in_Leader_Score parameter as an integer.
+
+DELIMITER //
+CREATE PROCEDURE UPDATE_LEADERS_SCORE(IN in_School_ID Integer, IN in_Leaders_Score Integer)
+
+--Question 2: Inside your stored procedure, write a SQL statement to update the Leaders_Score field in the CHICAGO_PUBLIC_SCHOOLS table for the school identified by in_School_ID to the value in the in_Leader_Score parameter.
+--Take a screenshot showing the SQL QUERY. 
+
+DELIMITER //
+CREATE PROCEDURE UPDATE_LEADERS_SCORE(IN in_School_ID Integer, IN in_Leaders_Score Integer)
+BEGIN 
+	
+	UPDATE CHICAGO_PUBLIC_SCHOOLS
+	SET Leaders_Score = in_Leaders_Score
+	WHERE SCHOOL_ID = in_SCHOOL_ID;
+
+--Question 3: Inside your stored procedure, write a SQL IF statement to update the Leaders_Icon field in the CHICAGO_PUBLIC_SCHOOLS table for the school identified by in_School_ID using the following information.
+" | Score lower limit	| Score upper limit | Icon |\n",
+  " | ------------------ |\n",
+  " | 80	| 99 | Very strong |n",
+  " | 60 | 79 |	Strong |n",
+  " | 40 | 59 |	Average |n",
+  " | 20 | 39 |	Weak |n",
+  " | 0 | 19 | Very Weak |",
+
+--Hint 1: Remember that once a clause of the IF statement executes, no further checking occurs and processing moves to the code below the IF statement.
+--Hint 2: Your IF statement should have a structure similar to:
+IF in_Leader_Score > 0 AND in_Leader_Score < 20 THEN
+
+-- update icon for 0-19
+
+ELSEIF in_Leader_Score < 40 THEN
+
+-- update icon for 20-39
+
+ELSEIF in_Leader_Score < 60 THEN
+
+-- update icon for 40-59
+
+ELSEIF in_Leader_Score < 80 THEN
+
+-- update icon for 60-79
+
+ELSEIF in_Leader_Score < 100 THEN
+
+-- update icon for 80-99
+
+END IF;
+--Question 4: Run your code to create the stored procedure. Take a screenshot showing the SQL query and its results.
+
+DELIMITER //
+CREATE PROCEDURE UPDATE_LEADERS_SCORE(IN in_School_ID Int, IN in_Leaders_Score Int)
+BEGIN 
+	
+	UPDATE CHICAGO_PUBLIC_SCHOOLS
+	SET Leaders_Score = in_Leaders_Score
+	WHERE SCHOOL_ID = in_SCHOOL_ID;
+
+IF (in_Leaders_Score > 0 AND in_Leaders_Score < 20) THEN                      
+        UPDATE CHICAGO_PUBLIC_SCHOOLS 
+        SET Leaders_icon = 'Very weak'
+        WHERE School_ID = in_School_ID;
+        
+    ELSEIF in_Leaders_Score < 40 THEN
+    	UPDATE CHICAGO_PUBLIC_SCHOOLS 
+        SET Leaders_icon = 'weak'
+        WHERE School_ID = in_School_ID;
+    	
+    ELSEIF in_Leaders_Score < 60 THEN
+    	UPDATE CHICAGO_PUBLIC_SCHOOLS 
+        SET Leaders_icon = 'Average'
+        WHERE School_ID = in_School_ID;
+ 
+ 	ELSEIF in_Leaders_Score < 80 THEN
+ 		UPDATE CHICAGO_PUBLIC_SCHOOLS 
+        SET Leaders_icon = 'Strong'
+        WHERE School_ID = in_School_ID;
+ 	
+ 	ELSEIF in_Leaders_Score < 100 THEN
+ 		UPDATE CHICAGO_PUBLIC_SCHOOLS 
+        SET Leaders_icon = 'Very Strong'
+        WHERE School_ID = in_School_ID;
+
+   END IF;                 
+END //
+DELIMITER;
+
+----Write a query to call the stored procedure, passing a valid school ID and a leader score of 50, to check that the procedure works as expected.
+CALL UPDATE_LEADERS_SCORE(610281, 50)
+SELECT School_ID, Leaders_Score, Leaders_Icon
+FROM CHICAGO_PUBLIC_SCHOOLS;
+
+## Exercise 4: Using Transactions
+## You realise that if someone calls your code with a score outside of the allowed range (0-99), then the score will be updated with the invalid data and the icon will remain at its previous value. There are various ways to avoid this problem, one of which is using a transaction.
