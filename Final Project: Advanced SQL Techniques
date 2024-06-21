@@ -98,41 +98,47 @@ END IF;
 --Question 4: Run your code to create the stored procedure. Take a screenshot showing the SQL query and its results.
 
 DELIMITER //
-CREATE PROCEDURE UPDATE_LEADERS_SCORE(IN in_School_ID Int, IN in_Leaders_Score Int)
+CREATE OR REPLACE PROCEDURE UPDATE_LEADERS_SCORE(IN in_School_ID INTEGER, IN in_Leaders_Score INTEGER);
+LANGUAGE SQL
+MODIFIES SQL DATA
+
 BEGIN 
-	
+
 	UPDATE CHICAGO_PUBLIC_SCHOOLS
-	SET Leaders_Score = in_Leaders_Score
-	WHERE SCHOOL_ID = in_SCHOOL_ID;
+	SET "Leaders_Score"= in_Leaders_Score
+	WHERE "School_ID" = in_School_ID;
+    
+    IF in_Leaders_Score > 0 AND in_Leaders_Score < 20 THEN
+		UPDATE CHICAGO_PUBLIC_SCHOOLS
+		SET "Leaders_Icon" = 'Very_weak'
+		WHERE "School_ID" = in_School_ID;
 
-IF (in_Leaders_Score > 0 AND in_Leaders_Score < 20) THEN                      
-        UPDATE CHICAGO_PUBLIC_SCHOOLS 
-        SET Leaders_icon = 'Very weak'
-        WHERE School_ID = in_School_ID;
+	ELSEIF in_Leaders_Score < 40 THEN
+		UPDATE CHICAGO_PUBLIC_SCHOOLS
+		SET "Leaders_Icon" = 'Weak'
+		WHERE "School_ID" = in_School_ID;
+
+	ELSEIF in_Leaders_Score < 60 THEN
+		UPDATE CHICAGO_PUBLIC_SCHOOLS
+		SET "Leaders_Icon" = 'Average'
+		WHERE "School_ID" = in_School_ID;
+
+	ELSEIF in_Leaders_Score < 80 THEN
+		UPDATE CHICAGO_PUBLIC_SCHOOLS
+		SET "Leaders_Icon" = 'Strong'
+		WHERE "School_ID" = in_School_ID;
+
+	ELSEIF in_Leaders_Score < 100 THEN
+		UPDATE CHICAGO_PUBLIC_SCHOOLS
+		SET "Leaders_Icon" = 'Very_strong'
+		WHERE "School_ID" = in_School_ID;
         
-    ELSEIF in_Leaders_Score < 40 THEN
-    	UPDATE CHICAGO_PUBLIC_SCHOOLS 
-        SET Leaders_icon = 'weak'
-        WHERE School_ID = in_School_ID;
-    	
-    ELSEIF in_Leaders_Score < 60 THEN
-    	UPDATE CHICAGO_PUBLIC_SCHOOLS 
-        SET Leaders_icon = 'Average'
-        WHERE School_ID = in_School_ID;
- 
- 	ELSEIF in_Leaders_Score < 80 THEN
- 		UPDATE CHICAGO_PUBLIC_SCHOOLS 
-        SET Leaders_icon = 'Strong'
-        WHERE School_ID = in_School_ID;
- 	
- 	ELSEIF in_Leaders_Score < 100 THEN
- 		UPDATE CHICAGO_PUBLIC_SCHOOLS 
-        SET Leaders_icon = 'Very Strong'
-        WHERE School_ID = in_School_ID;
-
-   END IF;                 
+        ELSE ROLLBACK WORK;
+	END IF;
+    
+    COMMIT WORK;
 END //
-DELIMITER;
+DELIMITER ;
 
 ----Write a query to call the stored procedure, passing a valid school ID and a leader score of 50, to check that the procedure works as expected.
 CALL UPDATE_LEADERS_SCORE(610281, 50)
@@ -141,3 +147,4 @@ FROM CHICAGO_PUBLIC_SCHOOLS;
 
 ## Exercise 4: Using Transactions
 ## You realise that if someone calls your code with a score outside of the allowed range (0-99), then the score will be updated with the invalid data and the icon will remain at its previous value. There are various ways to avoid this problem, one of which is using a transaction.
+--see above - ELSE ROLLBACK WORK; added before 'END IF;' statement and 'COMMIT WORK;' added after 'END IF;' (i.e. at the end of the IF statement)
